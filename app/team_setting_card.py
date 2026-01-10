@@ -39,25 +39,72 @@ class TeamSettingCard(QFrame):
         LanguageManager().register_component(self)
         self.select_system.retranslateUi()
         self.select_shop_strategy.retranslateUi()
+        
+        # 初始化侧边栏按钮样式
+        self._update_sidebar_button_style(self.team_setting.get("team_number", 1))
 
     def __init_widget(self):
-        self.main_layout = QVBoxLayout(self)
+        self.main_layout = QHBoxLayout(self)  # 改为水平布局：左侧边栏 + 主内容
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
+        
+        # ===== 左侧队伍选择器边栏 =====
+        self.team_sidebar = QFrame()
+        self.team_sidebar.setFixedWidth(75)  # 宽度调整为75px以容纳Team1文本
+        self.team_sidebar.setStyleSheet("background-color: rgba(0, 0, 0, 0.1);")
+        self.team_sidebar_layout = QVBoxLayout(self.team_sidebar)
+        self.team_sidebar_layout.setContentsMargins(2, 5, 2, 5)
+        self.team_sidebar_layout.setSpacing(0)
+        
+        # 可滚动的队伍列表
+        self.team_list_scroll = ScrollArea()
+        self.team_list_scroll.setWidgetResizable(True)
+        self.team_list_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.team_list_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.team_list_scroll.enableTransparentBackground()
+        
+        self.team_list_widget = QWidget()
+        self.team_list_layout = QVBoxLayout(self.team_list_widget)
+        self.team_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.team_list_layout.setSpacing(3)
+        
+        # 创建 Team1-Team20 按钮（使用 TogglePushButton 支持选中状态）
+        from qfluentwidgets import TogglePushButton
+        self.team_buttons = []
+        for i in range(1, 21):
+            btn = TogglePushButton(f"Team{i}")
+            btn.setFixedSize(70, 36)  # 加宽按钮
+            btn.clicked.connect(lambda checked, num=i: self.select_team_by_sidebar(num))
+            self.team_list_layout.addWidget(btn)
+            self.team_buttons.append(btn)
+        
+        self.team_list_layout.addStretch()
+        self.team_list_scroll.setWidget(self.team_list_widget)
+        self.team_sidebar_layout.addWidget(self.team_list_scroll)
+        
+        # ===== 主内容区域 =====
         self.scroll_general = ScrollArea()
         self.scroll_general.setWidgetResizable(True)
-        self.scroll_general.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll_general.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
         self.page_widget = QWidget()
         self.scroll_general.setWidget(self.page_widget)
 
         self.layout_ = QVBoxLayout(self.page_widget)
+        self.layout_.setContentsMargins(10, 0, 0, 0)  # 左侧留一点间距
 
-        self.main_layout.addWidget(self.scroll_general)
+        # 添加到主布局
+        self.main_layout.addWidget(self.team_sidebar)  # 左侧边栏
+        self.main_layout.addWidget(self.scroll_general)  # 主内容
+
 
         self.combobox_layout = BaseSettingLayout(box_type=1)
         self.combobox_layout.setMaximumHeight(75)
         self.combobox_layout.BoxLayout.setSpacing(40)
-        self.select_sinner_layout_1 = QHBoxLayout()
-        self.select_sinner_layout_2 = QHBoxLayout()
+        # 罪人卡片网格布局 (2行6列)
+        self.sinner_grid = QGridLayout()
+        self.sinner_grid.setSpacing(2)  # 卡片间隔2px
+        self.sinner_grid.setAlignment(Qt.AlignCenter)
 
         self.gift_system_layout = BaseSettingLayout(box_type=2)
         self.gift_system_layout.setMaximumHeight(150)
@@ -133,18 +180,17 @@ class TeamSettingCard(QFrame):
         self.combobox_layout.add(self.select_system)
         self.combobox_layout.add(self.select_shop_strategy)
 
-        self.select_sinner_layout_1.addWidget(self.sinner_YiSang)
-        self.select_sinner_layout_1.addWidget(self.sinner_Faust)
-        self.select_sinner_layout_1.addWidget(self.sinner_DonQuixote)
-        self.select_sinner_layout_1.addWidget(self.sinner_Ryoshu)
-        self.select_sinner_layout_1.addWidget(self.sinner_Meursault)
-        self.select_sinner_layout_1.addWidget(self.sinner_HongLu)
-        self.select_sinner_layout_2.addWidget(self.sinner_Heathcliff)
-        self.select_sinner_layout_2.addWidget(self.sinner_Ishmael)
-        self.select_sinner_layout_2.addWidget(self.sinner_Rodion)
-        self.select_sinner_layout_2.addWidget(self.sinner_Sinclair)
-        self.select_sinner_layout_2.addWidget(self.sinner_Outis)
-        self.select_sinner_layout_2.addWidget(self.sinner_Gregor)
+        # 罪人卡片添加到网格 (2行6列)
+        sinners = [
+            self.sinner_YiSang, self.sinner_Faust, self.sinner_DonQuixote,
+            self.sinner_Ryoshu, self.sinner_Meursault, self.sinner_HongLu,
+            self.sinner_Heathcliff, self.sinner_Ishmael, self.sinner_Rodion,
+            self.sinner_Sinclair, self.sinner_Outis, self.sinner_Gregor
+        ]
+        for i, sinner in enumerate(sinners):
+            row = i // 6  # 0 或 1
+            col = i % 6   # 0-5
+            self.sinner_grid.addWidget(sinner, row, col)
 
         self.gift_system_list_1.addWidget(self.burn)
         self.gift_system_list_1.addWidget(self.bleed)
@@ -164,18 +210,26 @@ class TeamSettingCard(QFrame):
         self.setting_layout.addWidget(self.confirm_button)
 
         self.layout_.addWidget(self.combobox_layout)
-        self.layout_.addLayout(self.select_sinner_layout_1)
-        self.layout_.addLayout(self.select_sinner_layout_2)
+        self.layout_.addLayout(self.sinner_grid)  # 使用网格布局
         self.layout_.addWidget(self.gift_system_layout)
         self.layout_.addWidget(self.custom_layout)
         self.layout_.addWidget(self.custom_layout2)
-
-        self.main_layout.addLayout(self.setting_layout)
-        self.main_layout.addSpacing(15)
-        self.setting_layout.setContentsMargins(10, 0, 10, 0)  # 手动对齐其他组件
+        self.layout_.addSpacing(15)
+        self.layout_.addLayout(self.setting_layout)  # 保存/取消按钮移到内容区域
+        self.setting_layout.setContentsMargins(10, 0, 10, 10)
 
         self.custom_layout.viewLayout.addWidget(self.customize_settings_module)
         self.custom_layout2.viewLayout.addWidget(self.customize_info_module)
+
+    def select_team_by_sidebar(self, team_num):
+        """通过侧边栏按钮选择队伍"""
+        self.select_team.combo_box.set_options(team_num - 1)
+        self._update_sidebar_button_style(team_num)
+    
+    def _update_sidebar_button_style(self, selected_num):
+        """更新侧边栏按钮状态，选中的按钮使用强调色"""
+        for i, btn in enumerate(self.team_buttons):
+            btn.setChecked(i + 1 == selected_num)
 
     def connect_mediator(self):
         # 连接所有可能信号

@@ -412,7 +412,7 @@ class SinnerSelect(QFrame):
         self.name_overlay.show()  # 名字覆盖层始终显示
         self.name_overlay.raise_()  # 提升到顶层确保可见
 
-        # sinner卡片的大小，537 x 827
+        # sinner卡片的大小，537 x 827 ， 239 x 155
         self.setFixedHeight(239) # Fixed size: 160x145
         self.setFixedWidth(155)
 
