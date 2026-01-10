@@ -1,6 +1,6 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QWidget, QHBoxLayout, QSizePolicy, QGridLayout
-from qfluentwidgets import FluentIcon as FIF, ExpandSettingCard
+from qfluentwidgets import FluentIcon as FIF, ExpandSettingCard, LineEdit
 from qfluentwidgets import ScrollArea, PrimaryPushButton, PushButton
 
 from app import *
@@ -123,9 +123,17 @@ class TeamSettingCard(QFrame):
 
     def __init_card(self):
         # 移除 select_team，改用侧边栏选择队伍
-        self.select_system = LabelWithComboBox(self.tr("选择队伍体系"), "team_system", all_systems, vbox=False)
-        self.select_shop_strategy = LabelWithComboBox(self.tr("选择商店策略"), "shop_strategy", shop_strategy,
+        self.select_system = LabelWithComboBox(self.tr("队伍体系"), "team_system", all_systems, vbox=False)
+        self.select_shop_strategy = LabelWithComboBox(self.tr("商店策略"), "shop_strategy", shop_strategy,
                                                       vbox=False)
+        
+        # 备注名输入框
+        self.remark_name_edit = LineEdit()
+        self.remark_name_edit.setPlaceholderText(self.tr("备注"))
+        self.remark_name_edit.setFixedWidth(150)
+        self.remark_name_edit.setFixedHeight(30) # 匹配 ComboBox 高度
+        self.remark_name_edit.textChanged.connect(self.on_remark_name_changed)
+
 
         self.sinner_YiSang = SinnerSelect("YiSang", self.tr("李箱"), None, "./assets/app/sinner/Yi_Sang_ID_Photo_3.png")
         self.sinner_Faust = SinnerSelect("Faust", self.tr("浮士德"), None, "./assets/app/sinner/Faust_ID_Photo_3.png")
@@ -174,6 +182,7 @@ class TeamSettingCard(QFrame):
 
     def __init_layout(self):
         # 移除 select_team，只保留 select_system 和 select_shop_strategy
+        self.combobox_layout.add(self.remark_name_edit) # 添加备注名输入框
         self.combobox_layout.add(self.select_system)
         self.combobox_layout.add(self.select_shop_strategy)
 
@@ -237,6 +246,11 @@ class TeamSettingCard(QFrame):
         self.read_settings()
         self.refresh_starlight_select()
         self._update_sidebar_button_style(team_num)
+        
+    def on_remark_name_changed(self, text):
+        """备注名变更时保存"""
+        cfg.set_value(f"team{self.team_num}_remark_name", text)
+
     
     def _update_sidebar_button_style(self, selected_num):
         """更新侧边栏按钮状态，选中的按钮使用强调色"""
@@ -371,6 +385,13 @@ class TeamSettingCard(QFrame):
                     self.findChild(BaseComboBox, combobox).set_options(self.team_setting[combobox])
                     if combobox == "team_system":
                         self.foolproof(self.team_setting[combobox])
+
+        # 读取备注名
+        remark_name = cfg.get_value(f"team{self.team_num}_remark_name")
+        if remark_name:
+            self.remark_name_edit.setText(remark_name)
+        else:
+            self.remark_name_edit.clear()
 
     def foolproof(self, team_system):
         for checkbox in all_checkbox_config_name:
