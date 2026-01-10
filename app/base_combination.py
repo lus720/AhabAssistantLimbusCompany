@@ -340,9 +340,26 @@ class SinnerSelect(QFrame):
         self.label_pic.setAlignment(Qt.AlignCenter)
         # self.label_pic.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        # Name Label
+        # sinner 名称 - 覆盖在图片顶部
+        self.label_title = label_title
+        self.name_overlay = QWidget(self)
+        self.name_overlay.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.name_overlay_layout = QVBoxLayout(self.name_overlay)
+        self.name_overlay_layout.setContentsMargins(0, 0, 5, 5)  # 右下角留5px边距
+        self.name_overlay_layout.setAlignment(Qt.AlignBottom | Qt.AlignRight)
+        
         self.label_str = BodyLabel(label_title)
         self.label_str.setAlignment(Qt.AlignCenter)
+        self.label_str.setStyleSheet("""
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+        """)
+        # 名字标签的透明度效果
+        self.name_opacity_effect = QGraphicsOpacityEffect(self.label_str)
+        self.name_opacity_effect.setOpacity(1.0)
+        self.label_str.setGraphicsEffect(self.name_opacity_effect)
+        self.name_overlay_layout.addWidget(self.label_str)
         
         # Load and set image
         pixmap = QPixmap(sinner_img)
@@ -350,8 +367,8 @@ class SinnerSelect(QFrame):
             rect = QRect(crop_left, crop_top, pixmap.width() - crop_left - crop_right, pixmap.height() - crop_top - crop_bottom)
             pixmap = pixmap.copy(rect)
         
-        # Manual scaling to fit the label area (approx 100x120) while keeping aspect ratio
-        pixmap = pixmap.scaled(92, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        # 截切后图片像素为30.7 x 32
+        pixmap = pixmap.scaled(123, 128, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.label_pic.setPixmap(pixmap)
 
         # Opacity Effect for Image
@@ -359,8 +376,8 @@ class SinnerSelect(QFrame):
         self.opacity_effect.setOpacity(1.0)
         self.label_pic.setGraphicsEffect(self.opacity_effect)
 
-        self.vBoxLayout.addWidget(self.label_pic, stretch=5)
-        self.vBoxLayout.addWidget(self.label_str, stretch=1)
+        self.vBoxLayout.addWidget(self.label_pic)  # 只添加图片，名字是覆盖显示
+
 
         # Internal CheckBox (Hidden, for logic reuse)
         self.box = BaseCheckBox(config_name, check_box_icon, '', parent=self)
@@ -392,9 +409,12 @@ class SinnerSelect(QFrame):
         self.overlay_layout.addWidget(self.selected_label)
         
         self.overlay_widget.hide()
+        self.name_overlay.show()  # 名字覆盖层始终显示
+        self.name_overlay.raise_()  # 提升到顶层确保可见
 
-        # Fixed Size
-        self.setFixedSize(110, 145) # Fixed size: 110x145
+        # sinner卡片的大小，537 x 827
+        self.setFixedHeight(239) # Fixed size: 160x145
+        self.setFixedWidth(155)
 
         # Initial Style
         self._update_style(self.box.check_box.isChecked())
@@ -409,6 +429,7 @@ class SinnerSelect(QFrame):
     def _update_style(self, checked):
         if checked:
             self.opacity_effect.setOpacity(0.5) # 选中时不透明度设为0.5（变暗50%）
+            self.name_opacity_effect.setOpacity(0.5)  # 名字也变暗50%
             self.setStyleSheet("""
                 SinnerSelect {
                     background-color: rgba(0, 0, 0, 0.5); /* 黑色半透明背景 */
@@ -418,6 +439,7 @@ class SinnerSelect(QFrame):
             """)
         else:
             self.opacity_effect.setOpacity(1.0) # 未选中时恢复图片不透明度
+            self.name_opacity_effect.setOpacity(1.0)  # 名字恢复不透明度
             self.setStyleSheet("""
                 SinnerSelect {
                     border: 2px solid rgba(128, 128, 128, 0.4);  /* 未选中态边框：2px实线，淡灰色 */
@@ -474,6 +496,7 @@ class SinnerSelect(QFrame):
         
     def resizeEvent(self, event):
         self.overlay_widget.setGeometry(self.rect())
+        self.name_overlay.setGeometry(self.rect())  # 名字覆盖层也跟随卡片大小
         super().resizeEvent(event)
 
 
