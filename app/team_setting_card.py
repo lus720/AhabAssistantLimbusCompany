@@ -117,12 +117,12 @@ class TeamSettingCard(QFrame):
         self.custom_layout2 = ExpandSettingCard(icon=FIF.INFO,
                                                   title=self.tr("编队统计数据"))
 
-        self.setting_layout = QHBoxLayout()
+        # 移除 setting_layout，改为自动保存
 
         self.scroll_general.enableTransparentBackground()
 
     def __init_card(self):
-        self.select_team = LabelWithComboBox(self.tr("选择队伍名称"), "team_number", all_teams, vbox=False)
+        # 移除 select_team，改用侧边栏选择队伍
         self.select_system = LabelWithComboBox(self.tr("选择队伍体系"), "team_system", all_systems, vbox=False)
         self.select_shop_strategy = LabelWithComboBox(self.tr("选择商店策略"), "shop_strategy", shop_strategy,
                                                       vbox=False)
@@ -170,13 +170,10 @@ class TeamSettingCard(QFrame):
         self.customize_settings_module = CustomizeSettingsModule()
         self.customize_info_module = CustomizeInfoModule(self.team_num)
 
-        self.cancel_button = PushButton(self.tr("取消"))
-        self.cancel_button.clicked.connect(self.cancel_team_setting)
-        self.confirm_button = PrimaryPushButton(self.tr("保存"))
-        self.confirm_button.clicked.connect(self.save_team_setting)
+        # 移除确认/取消按钮，改为自动保存
 
     def __init_layout(self):
-        self.combobox_layout.add(self.select_team)
+        # 移除 select_team，只保留 select_system 和 select_shop_strategy
         self.combobox_layout.add(self.select_system)
         self.combobox_layout.add(self.select_shop_strategy)
 
@@ -206,24 +203,39 @@ class TeamSettingCard(QFrame):
         self.gift_system_layout.add(self.gift_system_list_1)
         self.gift_system_layout.add(self.gift_system_list_2)
 
-        self.setting_layout.addWidget(self.cancel_button)
-        self.setting_layout.addWidget(self.confirm_button)
+        # 移除保存/取消按钮，改为自动保存
 
         self.layout_.addWidget(self.combobox_layout)
         self.layout_.addLayout(self.sinner_grid)  # 使用网格布局
         self.layout_.addWidget(self.gift_system_layout)
         self.layout_.addWidget(self.custom_layout)
         self.layout_.addWidget(self.custom_layout2)
-        self.layout_.addSpacing(15)
-        self.layout_.addLayout(self.setting_layout)  # 保存/取消按钮移到内容区域
-        self.setting_layout.setContentsMargins(10, 0, 10, 10)
 
         self.custom_layout.viewLayout.addWidget(self.customize_settings_module)
         self.custom_layout2.viewLayout.addWidget(self.customize_info_module)
 
     def select_team_by_sidebar(self, team_num):
-        """通过侧边栏按钮选择队伍"""
-        self.select_team.combo_box.set_options(team_num - 1)
+        """通过侧边栏按钮选择队伍，切换到新队伍并加载其设置"""
+        if team_num == self.team_num:
+            return  # 已经是当前队伍，无需切换
+        
+        # 切换到新队伍
+        self.team_num = team_num
+        
+        # 加载新队伍的设置
+        if cfg.get_value(f"team{team_num}_setting"):
+            import copy
+            self.team_setting = copy.deepcopy(team_setting_template)
+            config_team_setting = cfg.get_value(f"team{team_num}_setting")
+            for key, value in config_team_setting.items():
+                if key in self.team_setting:
+                    self.team_setting[key] = value
+        else:
+            self.team_setting = dict(team_setting_template)
+        
+        # 刷新界面
+        self.read_settings()
+        self.refresh_starlight_select()
         self._update_sidebar_button_style(team_num)
     
     def _update_sidebar_button_style(self, selected_num):
@@ -279,10 +291,19 @@ class TeamSettingCard(QFrame):
         elif "ignore_shop_" in keys:
             shop_index = int(keys.split("_")[-1]) - 1
             self.team_setting["ignore_shop"][shop_index] = values
+        
+        # 自动保存设置
+        self._auto_save()
+
+
+    def _auto_save(self):
+        """自动保存当前队伍设置到配置"""
+        cfg.set_value(f"team{self.team_num}_setting", self.team_setting)
 
     def save_team_setting(self):
-        cfg.set_value(f"team{self.team_num}_setting", self.team_setting)
-        self.cancel_team_setting()
+        """手动保存（保留向后兼容）"""
+        self._auto_save()
+        # 不再关闭页面，因为现在是永久页面
 
     def refresh_starlight_order(self):
         opening_bonus_order = self.team_setting["opening_bonus_order"]
@@ -368,7 +389,7 @@ class TeamSettingCard(QFrame):
     def retranslateUi(self):
         self.select_system.retranslateUi()
         self.select_shop_strategy.retranslateUi()
-        self.select_team.label.label.setText(self.tr("选择队伍名称"))
+        # select_team 已移除，改用侧边栏
         self.select_system.label.label.setText(self.tr("选择队伍体系"))
         self.select_shop_strategy.label.label.setText(self.tr("选择商店策略"))
         self.sinner_YiSang.label_str.setText(self.tr("李箱"))

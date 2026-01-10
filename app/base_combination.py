@@ -179,6 +179,7 @@ class MirrorSpinBox(QFrame):
 
 
 class MirrorTeamCombination(QFrame):
+    """简化版的队伍选择组件，包含 checkbox 和执行顺序"""
     def __init__(self, team_number, check_box_name, check_box_title,
                  check_box_icon: Union[str, QIcon, FluentIconBase, None],
                  button_name, parent=None):
@@ -186,144 +187,29 @@ class MirrorTeamCombination(QFrame):
         self.setObjectName(f"team_{team_number}")
 
         self.box_text = check_box_title
+        self.team_number = team_number
 
         self.hBoxLayout = QHBoxLayout(self)
         self.box = BaseCheckBox(check_box_name, check_box_icon, check_box_title, parent=self)
-        self.button = ToSettingButton(button_name, parent=self)
-
-        self.hBoxLayout.setAlignment(Qt.AlignCenter)
-
-        self.team_number = team_number
-
-        self.remark_name = LineEdit()
-        self.remark_name.setAlignment(Qt.AlignCenter)
-        self.remark_name.setPlaceholderText("备注名")
-        self.remark_name.setMaximumWidth(100)
-        self.remark_name.textChanged.connect(self.remark_name_changed)
-
+        
+        # 执行顺序显示框
         self.order = LineEdit()
         self.order.setAlignment(Qt.AlignCenter)
         self.order.setReadOnly(True)
         self.order.setMaximumWidth(60)
-
+        
+        self.hBoxLayout.setAlignment(Qt.AlignLeft)
         self.hBoxLayout.addWidget(self.box)
-        self.hBoxLayout.addWidget(self.remark_name)
         self.hBoxLayout.addWidget(self.order)
-        self.hBoxLayout.addWidget(self.button)
-
-        self.button.edit_name.triggered.connect(self.edit_button_clicked)
-        self.button.del_action.triggered.connect(self.delete_button_clicked)
-        self.button.copy_settings.triggered.connect(self.copy_team_settings)
-        self.button.paste_settings.triggered.connect(self.paste_team_settings)
-
-        self.refresh_remark_name()
-
-    def copy_team_settings(self):
-        setting = str(cfg.get_value(f"team{self.team_number}_setting"))
-        setting = "||AALC_TEAM_SETTING||" + setting  # 添加标识符
-        setting = base64.b64encode(setting.encode('utf-8')).decode('utf-8')
-        pyperclip.copy(setting)
-        bar = BaseInfoBar.success(
-            title=QT_TRANSLATE_NOOP("BaseInfoBar", '已复制到剪切板'),
-            content='',
-            orient=Qt.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=500,
-            parent=self.parent().parent()
-        )
-
-    def paste_team_settings(self):
-        setting = pyperclip.paste().strip()
-        try:
-            setting = base64.b64decode(setting).decode('utf-8')
-            if "||AALC_TEAM_SETTING||" not in setting:
-                raise settingsTypeError("不是有效的AALC设置")
-            setting = setting.replace("||AALC_TEAM_SETTING||", "", 1)
-        except settingsTypeError:
-            bar = BaseInfoBar.error(
-                title=QT_TRANSLATE_NOOP("BaseInfoBar", '该设置不属于 AALC'),
-                content='',
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=500,
-                parent=self.parent().parent()
-            )
-            return
-        except Exception:
-            bar = BaseInfoBar.error(
-                title=QT_TRANSLATE_NOOP("BaseInfoBar", '不是有效的 AALC 设置'),
-                content='',
-                orient=Qt.Horizontal,
-                isClosable=True,
-                position=InfoBarPosition.TOP,
-                duration=500,
-                parent=self.parent().parent()
-            )
-            return
-
-        data: dict = cfg.yaml.load(setting)
-        from app import team_setting_template
-        from copy import deepcopy
-
-        default_config = deepcopy(team_setting_template)
-        cfg._update_config(default_config, data)
-
-        cfg.set_value(f"team{self.team_number}_setting", default_config)
-        bar = BaseInfoBar.success(
-            title=QT_TRANSLATE_NOOP("BaseInfoBar", '已粘贴设置'),
-            content='',
-            orient=Qt.Horizontal,
-            isClosable=True,
-            position=InfoBarPosition.TOP,
-            duration=500,
-            parent=self.parent().parent()
-        )
-
-    def remark_name_changed(self, text):
-        cfg.set_value(f"team{self.team_number}_remark_name", text)
-
-    def edit_button_clicked(self):
-        name = cfg.get_value(f"team{self.team_number}_remark_name")
-        if name is None:
-            name = ""
-        message_box = MessageBoxEdit(
-            QT_TRANSLATE_NOOP("MessageBoxEdit", "设置备注名"),
-            name, self.window()
-        )
-        self.retranslateTempUi(message_box)
-        if message_box.exec():
-            new_name = str(message_box.getText())
-            cfg.set_value(f"team{self.team_number}_remark_name", new_name)
-            self.remark_name.setText(new_name)
-
-    def delete_button_clicked(self):
-        if len(team_toggle_button_group) > 1:
-            team_toggle_button_group.remove(self.button.button)
-            mediator.delete_team_setting.emit(f"team_{self.team_number}")
-
-    def refresh_remark_name(self):
-        name = cfg.get_value(f"team{self.team_number}_remark_name")
-        if name is not None:
-            self.remark_name.setText(name)
+        
+        # 移除备注名和设置按钮
+        # 队伍配置现在在"编队设置"页面进行
 
     def retranslateUi(self):
-        self.remark_name.setPlaceholderText(self.tr("备注名"))
-        self.button.retranslateUi()
-        if self.team_number == 1:
-            self.box.check_box.setText(self.tr(self.box_text))
-        elif self.team_number <= 9:
-            text = self.box_text[:-1]
-            box_text = f"{self.tr(text)}{self.team_number}"
-            self.box.check_box.setText(box_text)
-        else:
-            text = self.box_text[:-2]
-            box_text = f"{self.tr(text)}{self.team_number}"
-            self.box.check_box.setText(box_text)
+        """更新队伍名称显示"""
+        # 显示 "Team1" - "Team20"
+        self.box.check_box.setText(f"Team{self.team_number}")
 
-    def retranslateTempUi(self, message_box: MessageBoxEdit):
-        message_box.retranslateUi()
 
 
 class SinnerSelect(QFrame):

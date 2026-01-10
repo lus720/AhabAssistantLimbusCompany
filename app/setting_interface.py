@@ -10,6 +10,7 @@ from app.base_combination import ComboBoxSettingCard, SwitchSettingCard, PushSet
 from app.card.messagebox_custom import BaseInfoBar
 from app.language_manager import SUPPORTED_LANG_NAME, LanguageManager
 from module.config import cfg
+from tasks import tools  # 添加工具箱导入
 
 
 class SettingInterface(ScrollArea):
@@ -278,6 +279,33 @@ class SettingInterface(ScrollArea):
             parent=self.experimental_group
         )
 
+        # 工具箱设置组（从原小工具页面移动过来）
+        self.tools_group = BaseSettingCardGroup(
+            QT_TRANSLATE_NOOP("BaseSettingCardGroup", "工具箱"),
+            self.scroll_widget
+        )
+        self.auto_battle_card = BasePushSettingCard(
+            QT_TRANSLATE_NOOP("BasePushSettingCard", '运行'),
+            FIF.CAFE,
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "自动战斗"),
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "这只是一个为你自动按下P键和Enter键的小工具，不要怀抱太多期待"),
+            parent=self.tools_group
+        )
+        self.auto_production_card = BasePushSettingCard(
+            QT_TRANSLATE_NOOP("BasePushSettingCard", '运行'),
+            FIF.CAFE,
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "自动体力换饼"),
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "辅助自动换饼小工具，防止体力溢出"),
+            parent=self.tools_group
+        )
+        self.get_screenshot_card = BasePushSettingCard(
+            QT_TRANSLATE_NOOP("BasePushSettingCard", '运行'),
+            FIF.CAFE,
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "截图小工具"),
+            QT_TRANSLATE_NOOP("BasePushSettingCard", "辅助截图小工具"),
+            parent=self.tools_group
+        )
+
     def __initLayout(self):
         self.game_setting_group.addSettingCard(self.game_setting_card)
         self.game_setting_group.addSettingCard(self.auto_hard_mirror_card)
@@ -310,12 +338,17 @@ class SettingInterface(ScrollArea):
 
         self.experimental_group.addSettingCard(self.auto_lang_card)
 
+        self.tools_group.addSettingCard(self.auto_battle_card)
+        self.tools_group.addSettingCard(self.auto_production_card)
+        self.tools_group.addSettingCard(self.get_screenshot_card)
+
         self.expand_layout.addWidget(self.game_setting_group)
         self.expand_layout.addWidget(self.simulator_setting_group)
         self.expand_layout.addWidget(self.game_path_group)
         self.expand_layout.addWidget(self.personal_group)
         self.expand_layout.addWidget(self.update_group)
         self.expand_layout.addWidget(self.logs_group)
+        self.expand_layout.addWidget(self.tools_group)  # 添加工具箱
         self.expand_layout.addWidget(self.about_group)
         self.expand_layout.addWidget(self.experimental_group)
 
@@ -344,6 +377,12 @@ class SettingInterface(ScrollArea):
         self.discord_group_card.clicked.connect(self.__openUrl("https://discord.gg/vUAw98cEVe"))
         self.feedback_card.clicked.connect(
             self.__openUrl("https://github.com/KIYI671/AhabAssistantLimbusCompany/issues"))
+        
+        # 工具箱信号连接
+        self.auto_battle_card.clicked.connect(lambda: tools.start("battle"))
+        self.auto_production_card.clicked.connect(lambda: tools.start("production"))
+        self.get_screenshot_card.clicked.connect(lambda: tools.start("screenshot"))
+        self.get_screenshot_card.clicked.connect(self._onScreenshotToolButtonPressed)
 
     def __onGamePathCardClicked(self):
         game_path, _ = QFileDialog.getOpenFileName(self, "选择游戏路径", "", "All Files (*)")
@@ -444,6 +483,11 @@ class SettingInterface(ScrollArea):
         self.feedback_card.retranslateUi()
         self.experimental_group.retranslateUi()
         self.auto_lang_card.retranslateUi()
+        # 工具箱
+        self.tools_group.retranslateUi()
+        self.auto_battle_card.retranslateUi()
+        self.auto_production_card.retranslateUi()
+        self.get_screenshot_card.retranslateUi()
 
     def __onThemeCardChanged(self):
         theme_mode = cfg.get_value("theme_mode")
@@ -453,3 +497,20 @@ class SettingInterface(ScrollArea):
             setTheme(Theme.LIGHT)
         elif theme_mode == "Dark":
             setTheme(Theme.DARK)
+
+    def _onScreenshotToolButtonPressed(self):
+        """截图工具完成后显示通知"""
+        import time
+        time_str = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        title = QT_TRANSLATE_NOOP("BaseInfoBar", "截图完成")
+        msg = QT_TRANSLATE_NOOP("BaseInfoBar", "图片保存为 AALC > screenshot_{time_str}.png")
+        BaseInfoBar.success(
+            title=title,
+            content=msg,
+            content_kwargs={"time_str": time_str},
+            orient=Qt.Horizontal,
+            isClosable=True,
+            position=InfoBarPosition.BOTTOM_RIGHT,
+            duration=-1,
+            parent=self
+        )

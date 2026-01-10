@@ -345,21 +345,22 @@ class PageMirror(PageCard):
         self.connect_mediator()
 
     def __init_card(self):
-        self.team = MirrorTeamCombination(
-            1, "the_team_1",
-            QT_TRANSLATE_NOOP("MirrorTeamCombination", "编队1"),
-            None, "team1_setting"
-        )
+        # 创建 20 个固定的队伍选择项（不再动态创建）
+        self.team_checkboxes = []
+        for i in range(1, 21):
+            checkbox = MirrorTeamCombination(
+                i, f"the_team_{i}",
+                QT_TRANSLATE_NOOP("MirrorTeamCombination", f"Team{i}"),
+                None, f"team{i}_setting"
+            )
+            self.team_checkboxes.append(checkbox)
 
         self.mirror_count = MirrorSpinBox(
             QT_TRANSLATE_NOOP("MirrorSpinBox", "坐牢次数"),
             "set_mirror_count"
         )
 
-        self.add_team = QHBoxLayout()
-        self.add_team_button = TransparentToolButton(FIF.ADD, None)
-        self.add_team_button.setMinimumWidth(200)
-        self.add_team_button.clicked.connect(self.new_team)
+        # 移除添加队伍按钮，因为现在是固定 20 个队伍
 
         self.hard_mirror = BaseCheckBox(
             "hard_mirror", None,
@@ -423,10 +424,9 @@ class PageMirror(PageCard):
         )
 
     def __init_layout(self):
-        self.vbox_general.addWidget(self.team)
-
-        self.add_team.addWidget(self.add_team_button)
-        self.vbox_general.addLayout(self.add_team)
+        # 添加 20 个固定的队伍选择项
+        for checkbox in self.team_checkboxes:
+            self.vbox_general.addWidget(checkbox)
 
         self.vbox_advanced.addWidget(self.hard_mirror)
         self.vbox_advanced.addWidget(self.no_weekly_bonuses)
@@ -441,6 +441,7 @@ class PageMirror(PageCard):
         self.vbox_advanced.addWidget(self.fight_to_last_man)
 
         self.card_layout.insertWidget(self.card_layout.count() - 1, self.mirror_count)
+
 
 
     def _create_mirror_bar(self, current: int, total: int) -> TextProgressBar:
@@ -512,116 +513,33 @@ class PageMirror(PageCard):
             self.bar_layout = None
 
     def get_setting(self):
+        """刷新队伍选择状态（20个固定队伍）"""
         team_toggle_button_group.clear()
-        self.page_general.setUpdatesEnabled(False)
-        try:
-            for i in range(1, 21):
-                if self.findChild(MirrorTeamCombination, f"team_{i}") is not None:
-                    self.remove_team_card(f"team_{i}")
-            for i in range(1, 21):
-                if cfg.get_value(f"team{i}_setting") is not None:
-                    self.vbox_general.insertWidget(
-                        self.vbox_general.count() - 1,
-                        MirrorTeamCombination(
-                            i, f"the_team_{i}",
-                            f"编队{i}",
-                            None, f"team{i}_setting"
-                        )
-                    )
-        finally:
-            self.page_general.setUpdatesEnabled(True)
-        QT_TRANSLATE_NOOP("MirrorTeamCombination", "编队")
+        # 类似于旧逻辑，但不需要刷新备注名
         self.refresh()
 
-    def new_team(self):
-        number = len(team_toggle_button_group) + 1
-        if number < 20:
-            self.page_general.setUpdatesEnabled(False)
-            try:
-                newTeamComb = MirrorTeamCombination(number, f"the_team_{number}", f"编队{number}", None,
-                                                    f"team{number}_setting")
+    # 移除 new_team 方法，因为现在是固定 20 个队伍
 
-                newTeamComb.retranslateUi()
-                self.vbox_general.insertWidget(
-                    self.vbox_general.count() - 1,
-                    newTeamComb
-                )
-            finally:
-                self.page_general.setUpdatesEnabled(True)
+    # 移除 remove_team_card 方法，因为现在是固定 20 个队伍
 
-            if cfg.get_value(f"team{number}_setting") is None:
-                cfg.unsaved_set_value(f"team{number}_setting", dict(team_setting_template))
-                cfg.unsaved_set_value(f"team{number}_remark_name", None)
-                teams_be_select = cfg.get_value("teams_be_select")
-                teams_be_select.append(False)
-                teams_order = cfg.get_value("teams_order")
-                teams_order.append(0)
-                cfg.unsaved_set_value("teams_be_select", teams_be_select)
-                cfg.unsaved_set_value("teams_order", teams_order)
-                cfg.request_save()
+    # 移除 delete_team 方法，因为现在是固定 20 个队伍
 
-    def remove_team_card(self, target: str):
-        try:
-            team = self.findChild(MirrorTeamCombination, target)
-            if team is None:
-                return
-            self.vbox_general.removeWidget(team)
-            team.setParent(None)
-            team.deleteLater()
-            team = None
-        except Exception as e:
-            log.error(f"delete_team 出错：{e}")
-
-    def delete_team(self, target: str):
-        try:
-            team = self.findChild(MirrorTeamCombination, target)
-            if team is not None:
-                team_order_box = team.findChild(BaseCheckBox, f"the_team_{team.team_number}")
-                if team_order_box is not None:
-                    team_order_box.set_check_false()
-            self.remove_team_card(target)
-
-            number = int(target.split("_")[-1])
-            cfg.unsaved_del_key(f"team{number}_setting")
-            cfg.unsaved_del_key(f"team{number}_remark_name")
-
-            teams_be_select = cfg.get_value("teams_be_select")
-            teams_be_select.pop(number - 1)
-            teams_order = cfg.get_value("teams_order")
-            teams_order.pop(number - 1)
-            cfg.unsaved_set_value("teams_be_select", teams_be_select)
-            cfg.unsaved_set_value("teams_order", teams_order)
-
-            self.refresh_team_setting_card()
-            cfg.request_save()
-
-            self.retranslateUi()
-        except Exception as e:
-            log.error(f"delete_team 出错：{e}")
-
-    def refresh_team_setting_card(self):
-        for i in range(1, 21):
-            if cfg.get_value(f"team{i}_setting") is None and cfg.get_value(f"team{i + 1}_setting") is not None:
-                cfg.unsaved_set_value(f"team{i}_setting", cfg.get_value(f"team{i + 1}_setting"))
-                cfg.unsaved_del_key(f"team{i + 1}_setting")
-                cfg.unsaved_set_value(f"team{i}_remark_name", cfg.get_value(f"team{i + 1}_remark_name"))
-                cfg.unsaved_del_key(f"team{i + 1}_remark_name")
-        cfg.request_save()
-        self.get_setting()
+    # 移除 refresh_team_setting_card 方法，因为现在是固定 20 个队伍
 
     def refresh(self):
-        mirror_teams = self.findChildren(MirrorTeamCombination)
+        """刷新队伍选择顺序显示"""
         teams_order = cfg.get_value("teams_order")
-        for team in mirror_teams:
-            number = team.team_number
-            if teams_order[number - 1] != 0:
-                team.order.setText(str(teams_order[number - 1]))
+        if teams_order is None:
+            teams_order = [0] * 20
+        for i, checkbox in enumerate(self.team_checkboxes):
+            if i < len(teams_order) and teams_order[i] != 0:
+                checkbox.order.setText(str(teams_order[i]))
             else:
-                team.order.setText("")
+                checkbox.order.setText("")
+
 
     def connect_mediator(self):
-        # 连接所有可能信号
-        mediator.delete_team_setting.connect(self.delete_team)
+        # 连接所有可能信号（移除 delete_team_setting，因为队伍现在是固定的）
         mediator.refresh_teams_order.connect(self.refresh)
         mediator.mirror_signal.connect(self.update_mirror_bar)
         mediator.mirror_bar_kill_signal.connect(self.destroy_mirror_bar)

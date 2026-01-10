@@ -22,7 +22,7 @@ from app.page_card import MarkdownViewer
 from app.custom_pivot import FullWidthPivot
 from app.setting_interface import SettingInterface
 from app.team_setting_card import TeamSettingCard
-from app.tools_interface import ToolsInterface
+from app.team_setting_interface import TeamSettingInterface  # 替换 ToolsInterface
 from module.game_and_screen import screen
 from module.logger import log
 from module.update.check_update import check_update
@@ -183,14 +183,14 @@ class MainWindow(FramelessWindow):
             self.help_interface = MarkdownViewer("./assets/doc/zh/How_to_use.md")
         else:
             self.help_interface = MarkdownViewer("./assets/doc/en/How_to_use_EN.md")
-        self.tools_interface = ToolsInterface(self)
+        self.team_setting_interface = TeamSettingInterface(self)  # 替换 tools_interface
         self.setting_interface = SettingInterface(self)
         # self.team_setting = TeamSettingCard(self)
 
         # add items to pivot
         self.addSubInterface(self.farming_interface, 'farming_interface', '一键长草')
         self.addSubInterface(self.help_interface, 'help_interface', '帮助')
-        self.addSubInterface(self.tools_interface, 'tools_interface', '小工具')
+        self.addSubInterface(self.team_setting_interface, 'team_setting_interface', '编队设置')  # 替换小工具
         self.addSubInterface(self.setting_interface, 'setting_interface', '设置')
         # self.addSubInterface(self.team_setting, 'team_setting', '队伍设置')
 
@@ -404,18 +404,37 @@ class MainWindow(FramelessWindow):
         self.progress_ring.move(x, y)
 
     def check_mirror_setting(self):
+        """确保所有 20 个队伍都有配置"""
+        import copy
+        from app import team_setting_template
+        
+        # 确保 teams_be_select 和 teams_order 有 20 个元素
+        teams_be_select = cfg.get_value("teams_be_select")
+        if teams_be_select is None:
+            teams_be_select = [False] * 20
+        while len(teams_be_select) < 20:
+            teams_be_select.append(False)
+        cfg.set_value("teams_be_select", teams_be_select)
+        
+        teams_order = cfg.get_value("teams_order")
+        if teams_order is None:
+            teams_order = [0] * 20
+        while len(teams_order) < 20:
+            teams_order.append(0)
+        cfg.set_value("teams_order", teams_order)
+        
         for team_num in range(1, 21):
             if not cfg.get_value(f"team{team_num}_setting"):
-                return
-            config_team_setting = cfg.get_value(f"team{team_num}_setting")
-            import copy
-            from app import team_setting_template
-            team_setting = copy.deepcopy(team_setting_template)
-            # 用配置中的值覆盖模板的同名key（仅处理模板中存在的key）
-            for key, value in config_team_setting.items():
-                if key in team_setting:  # 忽略模板中已删除的key
-                    team_setting[key] = value
-            cfg.set_value(f"team{team_num}_setting", team_setting)
+                # 队伍不存在，创建新的默认配置
+                cfg.set_value(f"team{team_num}_setting", dict(team_setting_template))
+            else:
+                # 队伍存在，合并模板以确保所有键都存在
+                config_team_setting = cfg.get_value(f"team{team_num}_setting")
+                team_setting = copy.deepcopy(team_setting_template)
+                for key, value in config_team_setting.items():
+                    if key in team_setting:
+                        team_setting[key] = value
+                cfg.set_value(f"team{team_num}_setting", team_setting)
 
     def set_progress_ring(self, value: int):
         self.progress_ring.show()
@@ -441,7 +460,7 @@ class MainWindow(FramelessWindow):
     def retranslateUi(self):
         self.pivot.setItemText("farming_interface", self.tr("一键长草"))
         self.pivot.setItemText("help_interface", self.tr("帮助"))
-        self.pivot.setItemText("tools_interface", self.tr("小工具"))
+        self.pivot.setItemText("team_setting_interface", self.tr("编队设置"))  # 替换小工具
         self.pivot.setItemText("setting_interface", self.tr("设置"))
 
         if "team_setting" in list(self.pivot.items.keys()):
