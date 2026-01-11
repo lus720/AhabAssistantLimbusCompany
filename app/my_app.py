@@ -37,124 +37,30 @@ class Language(Enum):
     ENGLISH = QLocale(QLocale.Language.English)
     AUTO = QLocale()
 
-#  DEV 标识
-class DevWatermark(QWidget):
-    # 丝带常量
-    RIBBON_CENTER_DIST = 40
-    RIBBON_WIDTH = 24
-    
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setFixedSize(200, 200)
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, False)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        
-        # 透明度效果和动画
-        self._op = QGraphicsOpacityEffect(self)
-        self._op.setOpacity(1.0)
-        self.setGraphicsEffect(self._op)
-        
-        self.anim_opacity = QPropertyAnimation(self._op, b"opacity")
-        self.anim_opacity.setDuration(300)
-        self.anim_opacity.setEasingCurve(QEasingCurve.OutCubic)
-        
-        self._updateMask()
-
-    def _getRibbonRect(self) -> QRect:
-        """获取丝带矩形"""
-        return QRect(-100, self.RIBBON_CENTER_DIST - self.RIBBON_WIDTH // 2, 200, self.RIBBON_WIDTH)
-    
-    def _updateMask(self):
-        """设置鼠标检测区域为丝带形状"""
-        transform = QTransform()
-        transform.rotate(-45)
-        self.setMask(QRegion(transform.mapToPolygon(self._getRibbonRect())))
-
-    def _animateOpacity(self, target: float):
-        """动画过渡透明度"""
-        self.anim_opacity.stop()
-        self.anim_opacity.setStartValue(self._op.opacity())
-        self.anim_opacity.setEndValue(target)
-        self.anim_opacity.start()
-
-    def enterEvent(self, event):
-        self._animateOpacity(0.05)
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._animateOpacity(1.0)
-        super().leaveEvent(event)
-
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        painter.rotate(-45)
-        
-        rect = self._getRibbonRect()
-        
-        # 绘制丝带背景
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(QColor("#135b7d"))
-        painter.drawRect(rect)
-        
-        # 绘制文字
-        painter.setFont(QFont("Microsoft YaHei", 9, QFont.Bold))
-        painter.setPen(QColor("white"))
-        painter.drawText(rect, Qt.AlignCenter, "DEV")
-
-
-
+from app.widget.dev_watermark import DevWatermark
+from app.common.ui_config import apply_font_config, get_main_window_style, get_title_bar_style
 
 # 使用无框窗口
 class MainWindow(FramelessWindow):
     def __init__(self, argv: list[str]):
         super().__init__()
 
-        font_families = [
-            "Segoe UI",  # Windows 现代UI字体
-            "Microsoft YaHei",  # 微软雅黑
-            "微软雅黑",  # 微软雅黑中文名
-            "Noto Sans CJK SC",  # 跨平台中文字体
-            "sans-serif",  # 最后回退到无衬线字体
-            "SansSerif",  # 无衬线字体另一个名称
-            "SimSun",  # 宋体
-        ]
-        qconfig.fontFamilies.value = font_families
+        # 应用全局字体配置
+        apply_font_config()
 
-        title_bar = StandardTitleBar(self)
-        title_bar.titleLabel.setStyleSheet("""
-            QLabel{
-                background: transparent;
-                font-family: "Segoe UI", "Microsoft YaHei", "微软雅黑", "PingFang SC", "Hiragino Sans GB", sans-serif, "SimSun";
-                font-size: 13px;
-                padding: 0 4px
-            }
-        """)
-
-        # 设置标准标题栏，如果不设置则无法展示标题
-        self.setTitleBar(title_bar)
+        self.setTitleBar(StandardTitleBar(self))
         self.setWindowIcon(QIcon('./assets/logo/my_icon_256X256.ico'))
-        self.setWindowTitle(f"Ahab Assistant Limbus Company -  {cfg.version}")
+        self.setWindowTitle(f"Ahab Assistant Limbus Company - {cfg.version}")
         self.setObjectName("MainWindow")
         setThemeColor("#0078D4")
-        # self.hBoxLayout =QHBoxLayout(self)
-        # self.test_interface = TestInterface(self)
-        # self.hBoxLayout.setContentsMargins(0,0,0,0)
-        # self.hBoxLayout.addWidget(self.test_interface)
         LanguageManager().register_component(self)
         
         # Apply theme
-        theme_mode = cfg.get_value("theme_mode", "Auto")
-        if theme_mode == "Auto":
-            setTheme(Theme.AUTO)
-        elif theme_mode == "Light":
-            setTheme(Theme.LIGHT)
-        elif theme_mode == "Dark":
-            setTheme(Theme.DARK)
-        
-        # Connect theme change signal
-        qconfig.themeChanged.connect(self.updateBackground)
-        self.updateBackground()
+        setTheme(getattr(Theme, cfg.get_value("theme_mode", "AUTO"), Theme.AUTO))
+
+        # 监听主题变化
+        qconfig.themeChanged.connect(self._apply_theme_styles)
+        self._apply_theme_styles()
 
         # 禁用最大化
         self.titleBar.maxBtn.setHidden(True)
@@ -162,55 +68,83 @@ class MainWindow(FramelessWindow):
         self.titleBar.setDoubleClickEnabled(False)
         self.setResizeEnabled(False)
 
+        # 进度环（用于显示下载/更新进度）
         self.progress_ring = ProgressRing(self)
         self.progress_ring.hide()
 
         self.resize(1080, 600)
-        screen = QApplication.primaryScreen()
-        geometry = screen.availableGeometry() if screen else self.geometry()
-        w, h = geometry.width(), geometry.height()
-        self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
+        # 恢复窗口位置（如果有保存）
+        saved_x = cfg.get_value("window_position_x", None)
+        saved_y = cfg.get_value("window_position_y", None)
+        if saved_x is not None and saved_y is not None:
+            self.move(saved_x, saved_y)
+        else:
+            # 默认居中
+            screen = QApplication.primaryScreen()
+            geometry = screen.availableGeometry() if screen else self.geometry()
+            w, h = geometry.width(), geometry.height()
+            self.move(w // 2 - self.width() // 2, h // 2 - self.height() // 2)
 
-        self.pivot = FullWidthPivot()
-        self.stackedWidget = QStackedWidget()
-        self.vBoxLayout = QVBoxLayout(self)
-        self.HBoxLayout = QHBoxLayout()
+        self.pivot = FullWidthPivot()  # 顶部 Tab 导航栏
+        self.stackedWidget = QStackedWidget() # 页面容器（一次只显示一个页面）
+        self.vBoxLayout = QVBoxLayout(self) # 主布局（垂直）
+        self.HBoxLayout = QHBoxLayout() # 水平布局
         # self.stackedWidget.setStyleSheet("border: 1px solid black;")
 
 
+        # 创建子界面
         self.farming_interface = FarmingInterface(self)
-        if cfg.language_in_program == "zh_cn":
-            self.help_interface = MarkdownViewer("./assets/doc/zh/How_to_use.md")
-        else:
-            self.help_interface = MarkdownViewer("./assets/doc/en/How_to_use_EN.md")
         self.tools_interface = ToolsInterface(self)
         self.setting_interface = SettingInterface(self)
         # self.team_setting = TeamSettingCard(self)
 
-        # add items to pivot
+        # 向 pivot 添加子界面
         self.addSubInterface(self.farming_interface, 'farming_interface', '一键长草')
+        if cfg.language_in_program == "zh_cn":
+            self.help_interface = MarkdownViewer("./assets/doc/zh/How_to_use.md")
+        else:
+            self.help_interface = MarkdownViewer("./assets/doc/en/How_to_use_EN.md")
         self.addSubInterface(self.help_interface, 'help_interface', '帮助')
         self.addSubInterface(self.tools_interface, 'tools_interface', '小工具')
         self.addSubInterface(self.setting_interface, 'setting_interface', '设置')
         # self.addSubInterface(self.team_setting, 'team_setting', '队伍设置')
 
-        self.HBoxLayout.addWidget(self.pivot)
-        self.vBoxLayout.addSpacing(10)
-        self.vBoxLayout.addLayout(self.HBoxLayout, 0)
-        self.vBoxLayout.addWidget(self.stackedWidget)
-        self.vBoxLayout.setContentsMargins(30, 20, 30, 0)
-        self.pivot.setMaximumHeight(50)
 
-        self.stackedWidget.setCurrentWidget(self.farming_interface)
-        self.pivot.setCurrentItem(self.farming_interface.objectName())
+#       ┌──────────────────────────────────────────────────┐
+#       │ vBoxLayout                                       │
+#       │ ┌──────────────────────────────────────────────┐ │
+#       │ │ spacing(10) - 顶部间距                       │ │
+#       │ ├──────────────────────────────────────────────┤ │
+#       │ │ HBoxLayout                                   │ │
+#       │ │ ┌──────────────────────────────────────────┐ │ │
+#       │ │ │ pivot (最高50px)                           │ │ │
+#       │ │ │ [一键长草] [帮助] [小工具] [设置]          │ │ │
+#       │ │ └──────────────────────────────────────────┘ │ │
+#       │ ├──────────────────────────────────────────────┤ │
+#       │ │ stackedWidget                                │ │    
+#       │ │                                              │ │
+#       │ │              (页面内容区)                     │ │
+#       │ │                                              │ │
+#       │ └──────────────────────────────────────────────┘ │
+#       │   ↑                                          ↑   │
+#       │  30px                                      30px  │
+#       │  边距                                       边距  │
+#       └──────────────────────────────────────────────────┘
+        self.HBoxLayout.addWidget(self.pivot)            
+        self.vBoxLayout.addSpacing(10)                   
+        self.vBoxLayout.addLayout(self.HBoxLayout, 0)    
+        self.vBoxLayout.addWidget(self.stackedWidget)    
+        self.vBoxLayout.setContentsMargins(30, 20, 30, 0)
+        self.pivot.setMaximumHeight(50)                  
+
+
+        # Tab 切换逻辑：点击 Tab 时切换对应页面
         self.pivot.currentItemChanged.connect(
             lambda k: self.stackedWidget.setCurrentWidget(self.findChild(QWidget, k)))
-
-        # self.stackedWidget.setStyleSheet("background-color: white;")
-
-        # 将标题栏置顶
+        self.pivot.setCurrentItem(self.farming_interface.objectName())  # 设置默认Tab
+        
+        # 標題置頂
         self.titleBar.raise_()
-
         # Dev Watermark
         if os.environ.get('AALC_DEV_MODE') == '1' or not getattr(sys, 'frozen', False):
             self.dev_watermark = DevWatermark(self)
@@ -281,35 +215,28 @@ class MainWindow(FramelessWindow):
         if start_flag:
             QTimer.singleShot(3000, mediator.finished_signal.emit)
             
-    def updateBackground(self): # 不支持setCustomStyleSheet
-        if isDarkTheme():
-            bg_color, text_color, btn_color = "#272727", "white", Qt.white
-        else:
-            bg_color, text_color, btn_color = "#fdfdfd", "black", Qt.black
+    def _apply_theme_styles(self):
+        is_dark = isDarkTheme()
+        mainWindow_style = get_main_window_style(is_dark)
+        titleBar_style = get_title_bar_style(is_dark)
         
-        self.setStyleSheet(f"MainWindow {{ background-color: {bg_color}; }}")
-        self.titleBar.titleLabel.setStyleSheet(f"""
-            QLabel{{
-                background: transparent;
-                font-family: "Segoe UI", "Microsoft YaHei", "微软雅黑", "PingFang SC", "Hiragino Sans GB", sans-serif, "SimSun";
-                font-size: 13px;
-                padding: 0 4px;
-                color: {text_color};
-            }}
-        """)
-        
-        # 设置标题栏按钮颜色
+        self.setStyleSheet(f"MainWindow {{ background-color: {mainWindow_style['bg_color']}; }}")
+        self.titleBar.titleLabel.setStyleSheet(
+            f"QLabel {{ background: transparent; font-size: 13px; padding: 0 4px; color: {titleBar_style['text_color']}; }}"
+        )
         for btn in [self.titleBar.minBtn, self.titleBar.maxBtn, self.titleBar.closeBtn]:
-            btn.setNormalColor(btn_color)
-            btn.setHoverColor(btn_color)
-            btn.setPressedColor(btn_color)
-        
-        # closeBtn 悬停时在浅色模式下使用白色（保持原有行为）
-        if not isDarkTheme():
+            btn.setNormalColor(titleBar_style['btn_color'])
+            btn.setHoverColor(titleBar_style['btn_color'])
+            btn.setPressedColor(titleBar_style['btn_color'])
+        if not is_dark:
             self.titleBar.closeBtn.setHoverColor(Qt.white)
 
 
     def closeEvent(self, e):
+        # 保存窗口位置
+        cfg.set_value("window_position_x", self.x())
+        cfg.set_value("window_position_y", self.y())
+        
         if (
                 self.farming_interface.interface_left.my_script is not None
                 and self.farming_interface.interface_left.my_script.isRunning()

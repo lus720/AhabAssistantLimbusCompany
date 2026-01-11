@@ -29,8 +29,7 @@ from utils.utils import check_hard_mirror_time
 class FarmingInterface(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent=parent)
-
-        self.setObjectName("settingInterface")
+        # objectName 由 addSubInterface 设置，这里不需要设置
         self.hbox_layout = QHBoxLayout(self)
         self.hbox_layout_left = QVBoxLayout()
         self.hbox_layout_center = QVBoxLayout()
@@ -102,8 +101,6 @@ class FarmingInterfaceLeft(QWidget):
         self.setting_options.setSpacing(10)
 
         self.setting_box = BaseSettingLayout()
-        # self.setting_box.setFrameShape(QFrame.StyledPanel)  # 带阴影的边框
-        # self.setting_box.setLineWidth(1)
         self.setting_box.setLayout(self.setting_layout)
 
     def __init_card(self):
@@ -444,7 +441,7 @@ class FarmingInterfaceCenter(QWidget):
         try:
             """切换页面（带越界保护）"""
             page_index = page_name_and_index[target]
-            self.setting_page.setCurrentIndex(page_index)
+            self.setting_page.setCurrentIndex(page_index) # 当调用 setCurrentIndex 时，StackedWidget 会自动播放过渡动画
             cfg.set_value("default_page", page_index)
         except Exception as e:
             log.error(f"【异常】switch_to_page 出错：{type(e).__name__}:{e}")
@@ -478,7 +475,8 @@ class FarmingInterfaceRight(QWidget):
 
     def __init_widget(self):
         self.main_layout = QVBoxLayout(self)
-
+        self.setting_box = BaseSettingLayout()
+        self.main_layout.addWidget(self.setting_box)
     def __init_card(self):
         self.scroll_log_edit = TextEdit()
         self.scroll_log_edit.setAutoFormatting(QTextEdit.AutoFormattingFlag.AutoAll)

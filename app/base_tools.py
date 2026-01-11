@@ -6,10 +6,11 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QSizePolicy, QWi
 from qfluentwidgets import FluentIcon as FIF
 from qfluentwidgets import FluentIconBase, CheckBox, ToggleToolButton, ToolButton, PushButton, \
     BodyLabel, ComboBox, DoubleSpinBox, SpinBox, RoundMenu, SplitToolButton, ToolTipFilter, \
-    ToolTipPosition
+    ToolTipPosition, qconfig, isDarkTheme
 from qfluentwidgets.components.settings.setting_card import SettingIconWidget
 
 from app import *
+from app.common.ui_config import get_setting_layout_style
 from module.config import cfg
 
 
@@ -23,6 +24,20 @@ class BaseLayout(QFrame):
         self.hBoxLayout.setContentsMargins(0, 0, 0, 0)
         self.hBoxLayout.setAlignment(Qt.AlignCenter)
 
+# ┌─ FarmingInterfaceLeft ──────────────────┐
+# │ ┌─ BaseSettingLayout (带边框) ────────┐ │
+# │ │ ☑ 窗口设置 [⚙]  ← BaseCheckBox     │ │
+# │ │ ☑ 日常任务 [⚙]                     │ │
+# │ │ ☑ 领取奖励 [⚙]                     │ │
+# │ │ ☑ 狂气换体 [⚙]                     │ │
+# │ │ ☑ 坐牢设置 [⚙]                     │ │
+# │ │ ☑ 亚哈共鸣 [⚙]                     │ │
+# │ │                                     │ │
+# │ │ [全选] [清空] ← NormalTextButton    │ │
+# │ └─────────────────────────────────────┘ │
+# │ 之后 [▼选项]                            │
+# │ [  Link Start!  ] ← NormalTextButton   │
+# └─────────────────────────────────────────┘
 
 class BaseSettingLayout(QFrame):
     def __init__(self, box_type=0, parent=None):
@@ -36,17 +51,20 @@ class BaseSettingLayout(QFrame):
             self.BoxLayout = QVBoxLayout(self)
             self.BoxLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.setStyleSheet("""
-                    BaseSettingLayout {
-                        border: 1px solid rgba(0, 0, 0, 0.1); /* 边框 */
-                        border-radius: 5px; /* 圆角 */
-                        padding: 10px;   /* 内边距 */
-                        background-color: transparent; /* 背景透明 */
-                    }
-                    BaseSettingLayout:hover {
-                        border: 1px solid rgba(0, 0, 0, 0.2); /* 悬停时边框突出显示 */
-                    }
-                """)
+        # 监听主题变化
+        self._update_style()
+        qconfig.themeChanged.connect(self._update_style)
+
+    def _update_style(self):
+        style = get_setting_layout_style(isDarkTheme())
+        self.setStyleSheet(f"""
+            BaseSettingLayout {{
+                border: {style['border']}; /* 边框 */
+                border-radius: 5px; /* 圆角 */
+                padding: 10px;   /* 内边距 */
+                background-color: transparent; /* 背景透明 */
+            }}
+        """)
 
     def add(self, tool):
         if isinstance(tool, QWidget):

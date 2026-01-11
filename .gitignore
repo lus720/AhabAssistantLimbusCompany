@@ -11,6 +11,7 @@ theme_pack_list.yaml
 logs
 pythonlogs
 i18n/*.qm
+MFW-PyQt6
 
 .cursor
 .venv
