@@ -489,6 +489,7 @@ class FarmingInterfaceRight(QWidget):
     def _apply_theme_style(self):
         light, dark = get_log_text_edit_qss()
         setCustomStyleSheet(self.scroll_log_edit, light, dark)
+        self.scroll_log_edit.layer.hide() # 隐藏指示线
 
     def __init_layout(self):
         self.main_layout.addWidget(self.scroll_log_edit)
