@@ -52,10 +52,10 @@ class BaseSettingLayout(QFrame):
             self.BoxLayout.setContentsMargins(0, 0, 0, 0)
 
         # 监听主题变化
-        self._update_style()
-        qconfig.themeChanged.connect(self._update_style)
+        self._apply_theme_style()
+        qconfig.themeChanged.connect(self._apply_theme_style)
 
-    def _update_style(self):
+    def _apply_theme_style(self):
         style = get_setting_layout_style(isDarkTheme())
         self.setStyleSheet(f"""
             BaseSettingLayout {{

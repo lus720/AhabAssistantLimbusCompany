@@ -57,3 +57,42 @@ SETTING_LAYOUT_STYLES = {
 def get_setting_layout_style(is_dark: bool) -> dict:
     """获取设置卡片样式"""
     return SETTING_LAYOUT_STYLES["dark"] if is_dark else SETTING_LAYOUT_STYLES["light"]
+
+
+LOG_TEXT_EDIT_STYLES = {
+    "dark": '''
+        TextEdit {
+            background-color: red;
+            border: none;
+            border-bottom: none;
+        }
+        TextEdit:hover {
+            background-color: red;
+            border-bottom: none;
+        }
+        TextEdit:focus {
+            background-color: red;
+            border-bottom: none;
+        }
+    ''',
+    "light": '''
+        TextEdit {
+            background-color: green;
+            border: none;
+            border-bottom: none;
+        }
+        TextEdit:hover {
+            background-color: green;
+            border-bottom: none;
+        }
+        TextEdit:focus {
+            background-color: green;
+            border-bottom: none;
+        }
+    ''',
+}
+
+
+def get_log_text_edit_qss() -> tuple[str, str]:
+    '''Return (light_qss, dark_qss) for the log TextEdit.'''
+    return LOG_TEXT_EDIT_STYLES["light"], LOG_TEXT_EDIT_STYLES["dark"]

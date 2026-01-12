@@ -164,9 +164,9 @@ class SettingInterface(ScrollArea):
             QT_TRANSLATE_NOOP("ComboBoxSettingCard", '应用主题'),
             QT_TRANSLATE_NOOP("ComboBoxSettingCard", '调整应用的主题外观'),
             texts={
-                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '跟随系统'): "Auto",
-                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '亮色模式'): "Light",
-                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '深色模式'): "Dark",
+                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '跟随系统'): "AUTO",
+                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '亮色模式'): "LIGHT",
+                QT_TRANSLATE_NOOP("ComboBoxSettingCard", '深色模式'): "DARK",
             },
             parent=self.personal_group
         )
@@ -447,9 +447,9 @@ class SettingInterface(ScrollArea):
 
     def __onThemeCardChanged(self):
         theme_mode = cfg.get_value("theme_mode")
-        if theme_mode == "Auto":
+        if theme_mode == "AUTO":
             setTheme(Theme.AUTO)
-        elif theme_mode == "Light":
+        elif theme_mode == "LIGHT":
             setTheme(Theme.LIGHT)
-        elif theme_mode == "Dark":
+        elif theme_mode == "DARK":
             setTheme(Theme.DARK)

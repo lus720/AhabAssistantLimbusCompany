@@ -1,15 +1,15 @@
 import os
 import sys
-
 from PySide6.QtCore import Qt, QFile, QTimer
 from PySide6.QtWidgets import QApplication, QTextEdit
 from pynput import keyboard
-from qfluentwidgets import TextEdit, TransparentToolButton
+from qfluentwidgets import TextEdit, TransparentToolButton, setCustomStyleSheet
 from qfluentwidgets.window.stacked_widget import StackedWidget
 
 from app.base_combination import *
 from app.base_tools import *
 from app.language_manager import LanguageManager
+from app.common.ui_config import get_log_text_edit_qss
 from app.page_card import (
     PageSetWindows,
     PageDailyTask,
@@ -467,20 +467,28 @@ class FarmingInterfaceRight(QWidget):
         self.__init_layout()
         self.last_position = 0
 
+        self._apply_theme_style()
+        
         self.timer = QTimer()
         self.timer.timeout.connect(lambda option=0: self.set_log(option))
         self.timer.start(1000)  # 每秒更新一次
 
         self.connect_mediator()
 
+
     def __init_widget(self):
         self.main_layout = QVBoxLayout(self)
         self.setting_box = BaseSettingLayout()
         self.main_layout.addWidget(self.setting_box)
+        
     def __init_card(self):
         self.scroll_log_edit = TextEdit()
         self.scroll_log_edit.setAutoFormatting(QTextEdit.AutoFormattingFlag.AutoAll)
         self.scroll_log_edit.setReadOnly(True)
+
+    def _apply_theme_style(self):
+        light, dark = get_log_text_edit_qss()
+        setCustomStyleSheet(self.scroll_log_edit, light, dark)
 
     def __init_layout(self):
         self.main_layout.addWidget(self.scroll_log_edit)
