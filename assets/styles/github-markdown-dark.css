@@ -36,7 +36,7 @@ h1 {
     font-weight: 600;
     padding-bottom: 5px;
     font-size: 32px;
-    border-bottom: 1px solid #30363d;
+    border-bottom: 1px solid rgb(48, 54, 61);
 }
 
 h2 {
@@ -45,7 +45,7 @@ h2 {
     font-weight: 600;
     padding-bottom: 5px;
     font-size: 24px;
-    border-bottom: 1px solid #30363d;
+    border-bottom: 1px solid rgb(48, 54, 61);
 }
 
 h3 {

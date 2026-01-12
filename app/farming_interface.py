@@ -478,8 +478,6 @@ class FarmingInterfaceRight(QWidget):
 
     def __init_widget(self):
         self.main_layout = QVBoxLayout(self)
-        self.setting_box = BaseSettingLayout()
-        self.main_layout.addWidget(self.setting_box)
         
     def __init_card(self):
         self.scroll_log_edit = TextEdit()

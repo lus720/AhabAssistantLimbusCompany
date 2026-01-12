@@ -15,8 +15,8 @@ FONT_FAMILIES = [
 
 # 主窗口样式配置
 MAIN_WINDOW_STYLES = {
-    "dark": {"bg_color": "rgb(28, 28, 28)"},
-    "light": {"bg_color": "rgb(255, 255, 255)"},
+    "dark": {"bg_color": "rgba(28, 28, 28, 1)"},
+    "light": {"bg_color": "rgba(255, 255, 255, 1)"},
 }
 
 # 标题栏样式配置
@@ -44,12 +44,12 @@ def get_title_bar_style(is_dark: bool) -> dict:
 # 设置卡片样式配置
 SETTING_LAYOUT_STYLES = {
     "dark": {
-        "border": "1px solid rgb(63, 63, 70)",
-        "border_hover": "1px solid rgba(255, 255, 255, 0.12)",
+        "border": "1px solid rgba(255, 255, 255, 0.25)",
+        "border_hover": "1px solid rgba(255, 255, 255, 0.25)",
     },
     "light": {
-        "border": "1px solid rgb(224, 224, 224)",
-        "border_hover": "1px solid rgba(0, 0, 0, 0.2)",
+        "border": "1px solid rgba(0, 0, 0, 0.25)",
+        "border_hover": "1px solid rgba(0, 0, 0, 0.25)",
     }
 }
 
@@ -62,32 +62,34 @@ def get_setting_layout_style(is_dark: bool) -> dict:
 LOG_TEXT_EDIT_STYLES = {
     "dark": '''
         TextEdit {
-            background-color: red;
-            border: none;
-            border-bottom: none;
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 5px;
+            padding: 10px;
         }
         TextEdit:hover {
-            background-color: red;
-            border-bottom: none;
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
         TextEdit:focus {
-            background-color: red;
-            border-bottom: none;
+            background-color: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
     ''',
     "light": '''
         TextEdit {
-            background-color: green;
-            border: none;
-            border-bottom: none;
+            background-color: rgba(0, 0, 0, 0.01);
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            border-radius: 5px;
+            padding: 10px;
         }
         TextEdit:hover {
-            background-color: green;
-            border-bottom: none;
+            background-color: rgba(0, 0, 0, 0.01);
+            border: 1px solid rgba(0, 0, 0, 0.25);
         }
         TextEdit:focus {
-            background-color: green;
-            border-bottom: none;
+            background-color: rgba(0, 0, 0, 0.01);
+            border: 1px solid rgba(0, 0, 0, 0.25);
         }
     ''',
 }
