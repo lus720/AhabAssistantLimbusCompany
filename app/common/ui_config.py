@@ -62,6 +62,7 @@ def get_setting_layout_style(is_dark: bool) -> dict:
 LOG_TEXT_EDIT_STYLES = {
     "dark": '''
         TextEdit {
+            color: rgba(255, 255, 255, 0.75);
             background-color: rgba(255, 255, 255, 0.01);
             border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 5px;
@@ -78,6 +79,7 @@ LOG_TEXT_EDIT_STYLES = {
     ''',
     "light": '''
         TextEdit {
+            color: rgba(0, 0, 0, 0.75);
             background-color: rgba(0, 0, 0, 0.01);
             border: 1px solid rgba(0, 0, 0, 0.25);
             border-radius: 5px;
