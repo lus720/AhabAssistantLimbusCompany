@@ -374,7 +374,7 @@ class SinnerSelect(QFrame):
         self.overlay_layout.setAlignment(Qt.AlignCenter)
         self.overlay_layout.setSpacing(5) # Space between number and SELECTED text
 
-        # Number Label
+        # 编号
         self.number_label = BodyLabel() # Parent handled by layout
         self.number_label.setAlignment(Qt.AlignCenter)
         
@@ -382,10 +382,10 @@ class SinnerSelect(QFrame):
         font.setPointSize(30)
         font.setBold(True)
         self.number_label.setFont(font)
-        self.number_label.setStyleSheet("color: rgba(255, 255, 0, 1);") # Number color: Yellow
+        self.number_label.setStyleSheet("color: rgba(255, 255, 0, 1);")  # Number color: Yellow
         
-        # SELECTED Label
-        self.selected_label = BodyLabel() # Initialization, content/style set in set_text
+        # 选中
+        self.selected_label = BodyLabel()
         self.selected_label.setAlignment(Qt.AlignCenter)
         
         self.overlay_layout.addWidget(self.number_label)
@@ -393,10 +393,8 @@ class SinnerSelect(QFrame):
         
         self.overlay_widget.hide()
 
-        # Fixed Size
-        self.setFixedSize(110, 145) # Fixed size: 110x145
+        self.setFixedSize(110, 145)
 
-        # Initial Style
         self._update_style(self.box.check_box.isChecked())
 
     def mousePressEvent(self, event):

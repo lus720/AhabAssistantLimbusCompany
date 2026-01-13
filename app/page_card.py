@@ -6,7 +6,8 @@ from PySide6.QtWidgets import QWidget, QFrame, QHBoxLayout, QTextBrowser, QVBoxL
 from markdown_it import MarkdownIt
 from mdit_py_plugins.anchors import anchors_plugin
 from qfluentwidgets import FluentIcon as FIF
-from qfluentwidgets import SegmentedWidget, ScrollArea, TransparentToolButton, isDarkTheme, qconfig, TextBrowser
+from qfluentwidgets import SegmentedWidget, ScrollArea, TransparentToolButton, isDarkTheme, qconfig, TextBrowser, setCustomStyleSheet
+from app.common.ui_config import get_theme_aware_text_browser_qss
 from qfluentwidgets.window.stacked_widget import StackedWidget
 
 from app import *
@@ -667,18 +668,13 @@ class ThemeAwareTextBrowser(TextBrowser):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._applyBackgroundStyle()
-        qconfig.themeChanged.connect(self._applyBackgroundStyle)
+        self._apply_theme_style()
     
-    def _applyBackgroundStyle(self):
-        """应用与 HTML body 一致的背景色"""
-        bg_color = "rgb(38, 38, 38)" if isDarkTheme() else "#ffffff"
-        self.setStyleSheet(f"""
-            ThemeAwareTextBrowser {{
-                background-color: {bg_color};
-                border: none;
-            }}
-        """)
+    def _apply_theme_style(self):
+        """设置 HTML body 一致的背景色"""
+        self.layer.hide()  # 隐藏指示线
+        light, dark = get_theme_aware_text_browser_qss()
+        setCustomStyleSheet(self, light, dark)
 
     def _dimImage(self, image: QImage, opacity: int = 128) -> QImage:
         """对图片应用暗化效果"""

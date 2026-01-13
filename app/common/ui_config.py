@@ -100,3 +100,30 @@ LOG_TEXT_EDIT_STYLES = {
 def get_log_text_edit_qss() -> tuple[str, str]:
     '''Return (light_qss, dark_qss) for the log TextEdit.'''
     return LOG_TEXT_EDIT_STYLES["light"], LOG_TEXT_EDIT_STYLES["dark"]
+
+
+THEME_AWARE_TEXT_BROWSER_STYLES = {
+    "dark": '''
+        ThemeAwareTextBrowser,
+        ThemeAwareTextBrowser:hover,
+        ThemeAwareTextBrowser:focus,
+        ThemeAwareTextBrowser:focus:hover {
+            background-color: rgba(28, 28, 28, 1);
+            border: none;
+        }
+    ''',
+    "light": '''
+        ThemeAwareTextBrowser,
+        ThemeAwareTextBrowser:hover,
+        ThemeAwareTextBrowser:focus,
+        ThemeAwareTextBrowser:focus:hover {
+            background-color: rgba(255, 255, 255, 1);
+            border: none;
+        }
+    ''',
+}
+
+
+def get_theme_aware_text_browser_qss() -> tuple[str, str]:
+    '''Return (light_qss, dark_qss) for ThemeAwareTextBrowser.'''
+    return THEME_AWARE_TEXT_BROWSER_STYLES["light"], THEME_AWARE_TEXT_BROWSER_STYLES["dark"]
